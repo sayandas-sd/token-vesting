@@ -17,8 +17,28 @@ pub mod tokenvesting {
         company_name,
         treasury_bump: ctx.bumps.treasury_token_account, 
         bump: ctx.bumps.vesting_account,
-      }
+      };
+      
+      Ok(())
+    }
 
+    pub fn creating_employee_account(
+      ctx: Contex<CreatingEmployeeAccount>, 
+      start_time: i64, 
+      end_time: i64, 
+      clifftime: u64,
+      total_amount: u64
+    ) -> Result<()> {
+      *ctx.accounts.employee_account = EmployeeAccount {
+        beneficiary: ctx.acccounts.benificiary.key(),
+        start_time,
+        end_time,
+        cliff_time,
+        total_amount,
+        total_withdrawn: 0,
+        vesting_account: ctx.acccounts.vesting_account.key(),
+        bump: ctx.bumps.employee_account,
+      }
       Ok(())
     }
 
@@ -29,7 +49,6 @@ pub mod tokenvesting {
 
 #[derive(Acounts)]
 #[instruction(company_name: String)]
-
 pub struct CreatingVestingAccount<'info> {
   #[account(mut)]
 
@@ -62,6 +81,30 @@ pub struct CreatingVestingAccount<'info> {
   pub token_program: Interface<'info, TokenInterface>,
 }
 
+#[deirve(Accounts)]
+pub struct CreatingEmployeeAccount<'info> {
+  #[account(mut)]
+  pub owner:  Signer<'info>,
+  pub beneficiary: SystemAccount<'info>,
+  #[account(
+    has_one = owner
+  )]
+  pub vesting_account: Account<'info, VestingAccount>,
+
+  #[account(
+    init,
+    space = 8 + EmployeeAccount::INIT_SPACE,
+    payer = owner,
+    seeds = [b"employee_vesting", beneficiary.key().as_ref(), vesting_account.key().as_ref()],
+    bump,
+  )]
+
+  pub employee_account: Account<'info, EmployeeAccount>, 
+
+  pub system_program: Program<'info, System>,
+
+}
+
 #[account]
 #[derive(InitSpace)]
 pub struct VestingAccount {
@@ -75,4 +118,15 @@ pub struct VestingAccount {
 }
 
 
+#[account]
+#[derive(InitSpace)]
+pub struct EmployeeAccount {
+  pub beneficiary: PubKey,
+  pub start_time: i64,
+  pub end_time: i64,
+  pub cliff_time: i64,
+  pub vesting_account: PubKey,
+  pub total_amount: u64,
+  pub total_withdrawn: u64,
+}
 
