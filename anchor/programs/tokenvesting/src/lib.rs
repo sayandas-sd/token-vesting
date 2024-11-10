@@ -43,11 +43,14 @@ pub struct CreatingVestingAccount<'info> {
     token::mint = mint,
     token::authority = treasury_token_account,
     payer = signer,
-    seeds = ["vesting_treasury", company_name.as_ref()]
+    seeds = ["vesting_treasury", company_name.as_bytes()]
   )]
 
   pub treasury_token_account: InterfaceAccount<'info, TokenAccount>,
 
+  pub system_program: Program<'info, System>,
+
+  pub token_program: Interface<'info, TokenInterface>,
 }
 
 #[account]
