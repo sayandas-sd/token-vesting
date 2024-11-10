@@ -10,6 +10,15 @@ pub mod tokenvesting {
     use super::*;
 
     pub fn creating_vesting_account(ctx: Contex<CreatingVestingAccount>, company_name: String) -> Result<()> {
+      *ctx.accounts.vesting_account = VestingAccount {
+        owner: ctx.accounts.signer.key(), 
+        mint: ctx.accounts.mint.key(),
+        treasury_token_account: ctx.accounts.treasury_token_account.key(), 
+        company_name,
+        treasury_bump: ctx.bumps.treasury_token_account, 
+        bump: ctx.bumps.vesting_account,
+      }
+
       Ok(())
     }
 
