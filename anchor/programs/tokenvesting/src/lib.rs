@@ -44,6 +44,15 @@ pub mod tokenvesting {
 
 
     pub fn claim_tokens(ctx: Contex<ClaimTokens>, company_name: String) -> Result<()> {
+      
+      let employee_account = &mut ctx.acccounts.employee_account();
+
+      let now = Clock::get()?.unix_timestamp;
+
+      if now < employee_account.cliff_time {
+        return Err(ErrorCode::ClaimNotAvailableYet.into())
+      } 
+
       Ok(())
     }
 
@@ -187,3 +196,9 @@ pub struct EmployeeAccount {
   pub bump: u8
 }
 
+
+#[error_code]
+pub enum ErrorCode {
+  #[msg("Sorry Claim not Available yet")]
+  ClaimNotAvailableYet
+}
