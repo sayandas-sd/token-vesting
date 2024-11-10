@@ -2,6 +2,7 @@
 
 use anchor_lang::prelude::*;
 use anchor_spl::token_interface::Mint;
+use anchor_spl::{associated_token::AssociatedToken, token_interface::{self, Mint, TokenAccount, TokenInterface, TransferChecked}};
 
 declare_id!("AsjZ3kWAUSQRNt2pZVeJkywhZ6gpLpHZmJjduPmKZDZZ");
 
@@ -30,22 +31,22 @@ pub mod tokenvesting {
       total_amount: u64
     ) -> Result<()> {
       *ctx.accounts.employee_account = EmployeeAccount {
-        beneficiary: ctx.acccounts.benificiary.key(),
+        beneficiary: ctx.accounts.benificiary.key(),
         start_time,
         end_time,
         cliff_time,
         total_amount,
         total_withdrawn: 0,
-        vesting_account: ctx.acccounts.vesting_account.key(),
+        vesting_account: ctx.accounts.vesting_account.key(),
         bump: ctx.bumps.employee_account,
       }
       Ok(())
     }
 
 
-    pub fn claim_tokens(ctx: Contex<ClaimTokens>, company_name: String) -> Result<()> {
+    pub fn claim_tokens(ctx: Contex<ClaimTokens>, _company_name: String) -> Result<()> {
       
-      let employee_account = &mut ctx.acccounts.employee_account();
+      let employee_account = &mut ctx.accounts.employee_account();
 
       let now = Clock::get()?.unix_timestamp;
 
@@ -78,6 +79,29 @@ pub mod tokenvesting {
       if claimable_amount == 0 {
         return Err(ErrorCode::NothingClaim.into()) 
       }
+
+      let transfer_cpi_account = TransferChecked {
+        from: ctx.accounts.treasury_token_account.to_account_info(),
+        to: ctx.accounts.employee_token_account.to_account_info(),
+        mint: ctx.accounts.mint.to_account_info(),
+        authority: ctx.accounts.treasury_token_account.to_account_info()
+      };
+
+      let cpi_program = ctx.accounts.token_program.to_account_info();
+
+      let signer_seeds: &[&[&[u8]]] = &[
+        &[b"vesting_treasury",
+        ctx.accounts.vested_account.company_name.as_ref(),
+        &[ctx.accounts.vested_account.treasury_bump],
+        ],
+      ]
+
+      let cpi_context = CpiContext::new(cpi_program, trnsafer_cpi_accounts).with_signer(signer_seeds);
+
+      let decimals = ctx.account.mint.decimals;
+      token_interface::transfer_checked(cpi_context, claimable_amount as u64, decimals)?; 
+
+      employee_account.total_withdrawn += claimable_amount;
 
       Ok(())
     }
