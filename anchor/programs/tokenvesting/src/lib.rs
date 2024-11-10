@@ -1,7 +1,7 @@
 #![allow(clippy::result_large_err)]
 
 use anchor_lang::prelude::*;
-use anchor_spl::token_interface::Mint
+use anchor_spl::token_interface::Mint;
 
 declare_id!("AsjZ3kWAUSQRNt2pZVeJkywhZ6gpLpHZmJjduPmKZDZZ");
 
@@ -37,6 +37,16 @@ pub struct CreatingVestingAccount<'info> {
   pub vesting_account: Account<'info, VestingAccount>,
 
   pub mint: InterfaceAccount<'info, Mint>,
+
+  #[account(
+    init,
+    token::mint = mint,
+    token::authority = treasury_token_account,
+    payer = signer,
+    seeds = ["vesting_treasury", company_name.as_ref()]
+  )]
+
+  pub treasury_token_account: InterfaceAccount<'info, TokenAccount>,
 
 }
 
